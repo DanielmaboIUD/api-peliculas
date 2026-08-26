@@ -101,8 +101,8 @@ Todas las respuestas usan el mismo formato:
 | 409 | Valor duplicado en un campo único, o intento de eliminar un registro en uso |
 | 500 | Error interno |
 
-## Pruebas en Postman
+## Pruebas
 
-1. Import → `docs/API-Peliculas.postman_collection.json`
-2. Verificar que la variable `baseUrl` sea `http://localhost:3000`.
-3. Ejecutar la carpeta **6. Flujo completo sugerido**: cada POST guarda el id creado en una variable, así que al llegar a la producción ya tiene las referencias listas.
+Las pruebas se hicieron manualmente con **Thunder Client**, la extensión de cliente HTTP de Visual Studio Code.
+
+Se recorrieron los cinco módulos en este orden: alta de los cuatro catálogos, creación de una producción con sus referencias, consultas con paginación, filtros y búsqueda, edición y cambio de estado, y por último los rechazos (`400`, `404` y `409`) junto con la regla de referencias activas.

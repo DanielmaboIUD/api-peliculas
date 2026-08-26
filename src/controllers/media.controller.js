@@ -7,11 +7,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
 const { ok } = require('../utils/respuesta');
 
-/**
- * Regla del caso de estudio: al registrar o editar una produccion, el sistema
- * solo permite seleccionar generos, directores y productoras ACTIVOS.
- * El tipo solo debe existir.
- */
+// Regla del caso de estudio: solo se aceptan genero, director y productora
+// en estado Activo. El tipo unicamente debe existir.
 async function validarRelaciones({ genero, director, productora, tipo }) {
   const errores = [];
 
@@ -52,7 +49,6 @@ async function obtenerOFallar(id) {
   return media;
 }
 
-/** GET /api/medias */
 const listar = asyncHandler(async (req, res) => {
   const pagina = Math.max(parseInt(req.query.pagina, 10) || 1, 1);
   const limite = Math.min(Math.max(parseInt(req.query.limite, 10) || 10, 1), 100);
@@ -86,13 +82,11 @@ const listar = asyncHandler(async (req, res) => {
   });
 });
 
-/** GET /api/medias/:id */
 const obtener = asyncHandler(async (req, res) => {
   const media = await obtenerOFallar(req.params.id);
   return ok(res, { mensaje: 'Produccion encontrada', datos: media });
 });
 
-/** POST /api/medias */
 const crear = asyncHandler(async (req, res) => {
   await validarRelaciones(req.body);
   const media = await Media.create(req.body);
@@ -100,7 +94,6 @@ const crear = asyncHandler(async (req, res) => {
   return ok(res, { statusCode: 201, mensaje: 'Produccion creada correctamente', datos: creada });
 });
 
-/** PUT /api/medias/:id */
 const actualizar = asyncHandler(async (req, res) => {
   await obtenerOFallar(req.params.id);
   await validarRelaciones(req.body);
@@ -111,7 +104,6 @@ const actualizar = asyncHandler(async (req, res) => {
   return ok(res, { mensaje: 'Produccion actualizada correctamente', datos: media });
 });
 
-/** DELETE /api/medias/:id */
 const eliminar = asyncHandler(async (req, res) => {
   const media = await obtenerOFallar(req.params.id);
   await media.deleteOne();

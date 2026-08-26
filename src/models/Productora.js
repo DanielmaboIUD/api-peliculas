@@ -1,10 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { ESTADOS } = require('../utils/constantes');
 
-/**
- * Modulo de Productora
- * Registra y edita la productora principal (Disney, Warner, Paramount, MGM, ...).
- */
 const productoraSchema = new Schema(
   {
     nombre: {

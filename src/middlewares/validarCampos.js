@@ -1,9 +1,6 @@
 const { validationResult } = require('express-validator');
 const ApiError = require('../utils/ApiError');
 
-/**
- * Revisa el resultado de express-validator y corta la peticion si hay errores.
- */
 function validarCampos(req, res, next) {
   const errores = validationResult(req);
   if (!errores.isEmpty()) {
