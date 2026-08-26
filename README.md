@@ -21,10 +21,8 @@ MONGO_URI=mongodb://127.0.0.1:27017/peliculas_db
 ## Ejecución
 
 ```bash
-npm run dev        # desarrollo (nodemon)
-npm start          # normal
-npm run seed       # carga los datos iniciales del caso de estudio
-npm run verificar  # ejecuta las comprobaciones del proyecto
+npm run dev     # desarrollo (nodemon)
+npm start       # normal
 ```
 
 La API queda en `http://localhost:3000`.

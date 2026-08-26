@@ -1,14 +1,16 @@
 {
   "info": {
     "name": "API Peliculas - IU Digital de Antioquia",
-    "description": "Coleccion de pruebas de la API REST del caso de estudio de peliculas (modulos Genero, Director, Productora, Tipo y Media).\n\nAntes de usarla: levantar la API con `npm run dev` y confirmar que la variable baseUrl apunta al puerto correcto.\n\nLas peticiones POST guardan automaticamente el id creado en variables de coleccion, por lo que se pueden ejecutar las carpetas en orden.",
+    "description": "Plan de pruebas de la API REST del caso de estudio de peliculas.\nModulos: Genero, Director, Productora, Tipo y Media.\n\nCOMO USARLA\n1. Levantar la API con `npm run dev`.\n2. Confirmar que la variable baseUrl apunta al puerto correcto.\n3. Ejecutar la coleccion COMPLETA y EN ORDEN (Run collection). Las carpetas dependen unas de otras: la 1 crea los catalogos, la 6 los borra.\n\nLa carpeta 6 deja la base como estaba, asi que la coleccion se puede correr las veces que haga falta.\n\nLos nombres que usa (Suspenso, A24, Miniserie, MED-0100) no chocan con ningun dato previo del proyecto.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "0. Estado de la API",
+      "description": "Humo. Si algo de aqui falla, no tiene sentido seguir: la API no esta corriendo o el puerto no es el de baseUrl.",
       "item": [
         {
+          "name": "Salud del servidor",
           "request": {
             "method": "GET",
             "header": [
@@ -26,7 +28,7 @@
                 "health"
               ]
             },
-            "description": "Verifica que el servidor esta arriba."
+            "description": "Comprueba que el proceso responde."
           },
           "response": [],
           "event": [
@@ -35,13 +37,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"exito es true\", function () { pm.expect(json.exito).to.eql(true); });"
                 ]
               }
             }
           ]
         },
         {
+          "name": "Mapa de modulos",
           "request": {
             "method": "GET",
             "header": [
@@ -59,7 +64,7 @@
                 "api"
               ]
             },
-            "description": "Lista los modulos disponibles."
+            "description": "Indice de la API. Confirma que el enrutador esta montado y lista los cinco modulos."
           },
           "response": [],
           "event": [
@@ -68,7 +73,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Lista los 5 modulos\", function () { pm.expect(Object.keys(json.modulos)).to.have.lengthOf(5); });"
                 ]
               }
             }
@@ -77,9 +84,11 @@
       ]
     },
     {
-      "name": "1. Modulo Genero",
+      "name": "1. Crear catalogos",
+      "description": "Los cuatro modulos de apoyo. Cada POST guarda su _id en una variable de coleccion, asi que las carpetas siguientes ya lo tienen.",
       "item": [
         {
+          "name": "Crear genero",
           "request": {
             "method": "POST",
             "header": [
@@ -98,10 +107,10 @@
                 "generos"
               ]
             },
-            "description": "Crea un genero. Guarda el id en la variable {{generoId}}.",
+            "description": "Crea el genero y guarda {{generoId}}.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Ciencia ficcion\",\n  \"estado\": \"Activo\",\n  \"descripcion\": \"Tecnologia, espacio y futuros posibles.\"\n}",
+              "raw": "{\n  \"nombre\": \"Suspenso\",\n  \"descripcion\": \"Tension sostenida y giros de guion.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -116,15 +125,169 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('generoId', json.datos._id); }"
+                  "pm.test(\"Responde 201\", function () { pm.response.to.have.status(201); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Nace en estado Activo\", function () { pm.expect(json.datos.estado).to.eql(\"Activo\"); });",
+                  "pm.test(\"Trae fechas automaticas\", function () { pm.expect(json.datos).to.have.property(\"fechaCreacion\"); pm.expect(json.datos).to.have.property(\"fechaActualizacion\"); });",
+                  "pm.test(\"Devuelve el _id creado\", function () { pm.expect(json.datos).to.have.property(\"_id\"); });",
+                  "if (json.datos && json.datos._id) { pm.collectionVariables.set(\"generoId\", json.datos._id); }"
                 ]
               }
             }
           ]
         },
         {
+          "name": "Crear director",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/directores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "directores"
+              ]
+            },
+            "description": "El campo es 'nombres' en plural, como lo pide el caso de estudio. Guarda {{directorId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Bong Joon-ho\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", function () { pm.response.to.have.status(201); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Nace en estado Activo\", function () { pm.expect(json.datos.estado).to.eql(\"Activo\"); });",
+                  "pm.test(\"Devuelve el _id creado\", function () { pm.expect(json.datos).to.have.property(\"_id\"); });",
+                  "if (json.datos && json.datos._id) { pm.collectionVariables.set(\"directorId\", json.datos._id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear productora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/productoras",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "productoras"
+              ]
+            },
+            "description": "Unico catalogo con slogan. Guarda {{productoraId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"A24\",\n  \"slogan\": \"Cine que incomoda\",\n  \"descripcion\": \"Productora y distribuidora independiente.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", function () { pm.response.to.have.status(201); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Guarda el slogan\", function () { pm.expect(json.datos.slogan).to.eql(\"Cine que incomoda\"); });",
+                  "pm.test(\"Devuelve el _id creado\", function () { pm.expect(json.datos).to.have.property(\"_id\"); });",
+                  "if (json.datos && json.datos._id) { pm.collectionVariables.set(\"productoraId\", json.datos._id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear tipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tipos"
+              ]
+            },
+            "description": "El caso de estudio no pide estado para este modulo, y la API lo respeta. Guarda {{tipoId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Miniserie\",\n  \"descripcion\": \"Produccion cerrada de pocos capitulos.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", function () { pm.response.to.have.status(201); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Tipo NO maneja estado\", function () { pm.expect(json.datos).to.not.have.property(\"estado\"); });",
+                  "pm.test(\"Devuelve el _id creado\", function () { pm.expect(json.datos).to.have.property(\"_id\"); });",
+                  "if (json.datos && json.datos._id) { pm.collectionVariables.set(\"tipoId\", json.datos._id); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Consultar y editar catalogos",
+      "description": "Listado con paginacion, consulta puntual y edicion parcial.",
+      "item": [
+        {
+          "name": "Listar generos con paginacion",
           "request": {
             "method": "GET",
             "header": [
@@ -153,7 +316,7 @@
                 }
               ]
             },
-            "description": "Lista los generos. Admite ?pagina=1&limite=10&estado=Activo&buscar=texto"
+            "description": "El bloque meta debe traer total, pagina, limite y paginas."
           },
           "response": [],
           "event": [
@@ -162,13 +325,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Trae meta de paginacion\", function () { pm.expect(json.meta).to.include.all.keys(\"total\",\"pagina\",\"limite\",\"paginas\"); });",
+                  "pm.test(\"La lista es un arreglo\", function () { pm.expect(json.datos).to.be.an(\"array\"); });"
                 ]
               }
             }
           ]
         },
         {
+          "name": "Consultar genero por id",
           "request": {
             "method": "GET",
             "header": [
@@ -188,7 +355,7 @@
                 "{{generoId}}"
               ]
             },
-            "description": "Consulta un genero por id."
+            "description": "Recupera el genero creado en la carpeta anterior."
           },
           "response": [],
           "event": [
@@ -197,13 +364,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Es el genero creado\", function () { pm.expect(json.datos.nombre).to.eql(\"Suspenso\"); });"
                 ]
               }
             }
           ]
         },
         {
+          "name": "Editar genero",
           "request": {
             "method": "PUT",
             "header": [
@@ -223,10 +393,10 @@
                 "{{generoId}}"
               ]
             },
-            "description": "Actualiza un genero.",
+            "description": "Edicion parcial: solo se manda un campo y el resto se conserva.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Ciencia ficcion\",\n  \"descripcion\": \"Descripcion actualizada.\"\n}",
+              "raw": "{\n  \"descripcion\": \"Tension sostenida, giros de guion y final abierto.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -241,13 +411,655 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Descripcion actualizada\", function () { pm.expect(json.datos.descripcion).to.include(\"final abierto\"); });",
+                  "pm.test(\"El nombre se conserva\", function () { pm.expect(json.datos.nombre).to.eql(\"Suspenso\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Media: crear, consultar y filtrar",
+      "description": "El modulo central. Lo importante es que las cuatro relaciones vuelven pobladas como objetos, no como ids sueltos.",
+      "item": [
+        {
+          "name": "Crear produccion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ]
+            },
+            "description": "Usa los cuatro ids guardados. Guarda {{mediaId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial\": \"MED-0100\",\n  \"titulo\": \"Parasitos\",\n  \"sinopsis\": \"Una familia sin recursos se infiltra poco a poco en la casa de una familia adinerada.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/parasitos\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/parasitos.jpg\",\n  \"anioEstreno\": 2019,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", function () { pm.response.to.have.status(201); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"El genero viene poblado como objeto\", function () { pm.expect(json.datos.genero).to.be.an(\"object\"); pm.expect(json.datos.genero.nombre).to.eql(\"Suspenso\"); });",
+                  "pm.test(\"El director viene poblado\", function () { pm.expect(json.datos.director.nombres).to.eql(\"Bong Joon-ho\"); });",
+                  "pm.test(\"La productora viene poblada\", function () { pm.expect(json.datos.productora.nombre).to.eql(\"A24\"); });",
+                  "pm.test(\"El tipo viene poblado\", function () { pm.expect(json.datos.tipo.nombre).to.eql(\"Miniserie\"); });",
+                  "pm.test(\"Devuelve el _id creado\", function () { pm.expect(json.datos).to.have.property(\"_id\"); });",
+                  "if (json.datos && json.datos._id) { pm.collectionVariables.set(\"mediaId\", json.datos._id); }"
                 ]
               }
             }
           ]
         },
         {
+          "name": "Consultar produccion por id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias",
+                "{{mediaId}}"
+              ]
+            },
+            "description": "El populate tambien aplica en la consulta individual, no solo al crear."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Las 4 relaciones estan pobladas\", function () { [\"genero\",\"director\",\"productora\",\"tipo\"].forEach(function (c) { pm.expect(json.datos[c]).to.be.an(\"object\"); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar produccion",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias",
+                "{{mediaId}}"
+              ]
+            },
+            "description": "Solo cambia el titulo; las relaciones y el resto de campos siguen igual.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Parasitos (version en blanco y negro)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Titulo actualizado\", function () { pm.expect(json.datos.titulo).to.include(\"blanco y negro\"); });",
+                  "pm.test(\"fechaActualizacion cambio\", function () { pm.expect(json.datos.fechaActualizacion).to.not.eql(json.datos.fechaCreacion); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar por texto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias?buscar=parasitos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ],
+              "query": [
+                {
+                  "key": "buscar",
+                  "value": "parasitos"
+                }
+              ]
+            },
+            "description": "Busca sin distinguir mayusculas en titulo, sinopsis y serial."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Encuentra al menos una\", function () { pm.expect(json.meta.total).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtrar por genero",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias?genero={{generoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ],
+              "query": [
+                {
+                  "key": "genero",
+                  "value": "{{generoId}}"
+                }
+              ]
+            },
+            "description": "Filtro por referencia."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Encuentra al menos una\", function () { pm.expect(json.meta.total).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtrar sin coincidencias",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias?anioEstreno=1899",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ],
+              "query": [
+                {
+                  "key": "anioEstreno",
+                  "value": "1899"
+                }
+              ]
+            },
+            "description": "Un filtro que no encuentra nada NO es un error: responde 200 con la lista vacia."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Total en cero\", function () { pm.expect(json.meta.total).to.eql(0); });",
+                  "pm.test(\"Lista vacia\", function () { pm.expect(json.datos).to.be.an(\"array\").that.is.empty; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Validaciones y errores",
+      "description": "Aqui el error ES el resultado correcto. Cada respuesta trae exito:false y, cuando aplica, un arreglo detalles con el campo que fallo.",
+      "item": [
+        {
+          "name": "400 - falta el nombre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos"
+              ]
+            },
+            "description": "Cuerpo vacio: se corta en el validador, antes de tocar la base.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"exito es false\", function () { pm.expect(json.exito).to.eql(false); });",
+                  "pm.test(\"Senala el campo nombre\", function () { pm.expect(json.detalles[0].campo).to.eql(\"nombre\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 - estado fuera del enum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos"
+              ]
+            },
+            "description": "El estado solo acepta Activo o Inactivo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Documental\",\n  \"estado\": \"Raro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Senala el campo estado\", function () { pm.expect(json.detalles[0].campo).to.eql(\"estado\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 - id mal formado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos/abc123",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos",
+                "abc123"
+              ]
+            },
+            "description": "No es un ObjectId de MongoDB."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Senala el parametro id\", function () { pm.expect(json.detalles[0].campo).to.eql(\"id\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 - id inexistente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos/507f1f77bcf86cd799439011",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos",
+                "507f1f77bcf86cd799439011"
+              ]
+            },
+            "description": "Formato valido pero no existe. Caso distinto al anterior, codigo distinto."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 404\", function () { pm.response.to.have.status(404); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"exito es false\", function () { pm.expect(json.exito).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 - URL mal formada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ]
+            },
+            "description": "La URL de la produccion debe ser una URL real.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial\": \"MED-9999\",\n  \"titulo\": \"Parasitos\",\n  \"sinopsis\": \"Una familia sin recursos se infiltra poco a poco en la casa de una familia adinerada.\",\n  \"url\": \"esto-no-es-una-url\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/parasitos.jpg\",\n  \"anioEstreno\": 2019,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Senala el campo url\", function () { pm.expect(json.detalles.map(function (d) { return d.campo; })).to.include(\"url\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 - referencia inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ]
+            },
+            "description": "El genero no existe en la base.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial\": \"MED-9998\",\n  \"titulo\": \"Parasitos\",\n  \"sinopsis\": \"Una familia sin recursos se infiltra poco a poco en la casa de una familia adinerada.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/inexistente\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/parasitos.jpg\",\n  \"anioEstreno\": 2019,\n  \"genero\": \"507f1f77bcf86cd799439011\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Senala el campo genero\", function () { pm.expect(json.detalles[0].campo).to.eql(\"genero\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "409 - nombre de genero repetido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos"
+              ]
+            },
+            "description": "Indice unico de MongoDB traducido a 409 por el middleware de errores.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Suspenso\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", function () { pm.response.to.have.status(409); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"El mensaje nombra el valor repetido\", function () { pm.expect(json.mensaje).to.include(\"Suspenso\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "409 - serial y URL repetidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ]
+            },
+            "description": "Mismo serial y misma URL aunque el titulo sea otro.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial\": \"MED-0100\",\n  \"titulo\": \"Otra produccion\",\n  \"sinopsis\": \"Una familia sin recursos se infiltra poco a poco en la casa de una familia adinerada.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/parasitos\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/parasitos.jpg\",\n  \"anioEstreno\": 2019,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", function () { pm.response.to.have.status(409); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"exito es false\", function () { pm.expect(json.exito).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Regla del caso: solo referencias activas",
+      "description": "El enunciado dice que solo se pueden seleccionar generos, directores y productoras ACTIVOS. Esta carpeta lo demuestra al crear y al editar, y deja todo como estaba.",
+      "item": [
+        {
+          "name": "Desactivar el genero",
           "request": {
             "method": "PATCH",
             "header": [
@@ -268,7 +1080,7 @@
                 "estado"
               ]
             },
-            "description": "Alterna el estado entre Activo e Inactivo (borrado logico)."
+            "description": "Sin cuerpo. Alterna el estado: es el borrado logico del catalogo."
           },
           "response": [],
           "event": [
@@ -277,48 +1089,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Queda Inactivo\", function () { pm.expect(json.datos.estado).to.eql(\"Inactivo\"); });"
                 ]
               }
             }
           ]
         },
         {
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/generos/{{generoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "generos",
-                "{{generoId}}"
-              ]
-            },
-            "description": "Elimina el genero."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
+          "name": "Rechaza crear con genero inactivo",
           "request": {
             "method": "POST",
             "header": [
@@ -328,19 +1108,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/generos",
+              "raw": "{{baseUrl}}/api/medias",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "generos"
+                "medias"
               ]
             },
-            "description": "VALIDACION: nombre vacio, debe responder 400.",
+            "description": "Datos impecables, pero el genero esta inactivo.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"\"\n}",
+              "raw": "{\n  \"serial\": \"MED-0101\",\n  \"titulo\": \"Okja\",\n  \"sinopsis\": \"Una familia sin recursos se infiltra poco a poco en la casa de una familia adinerada.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/okja\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/parasitos.jpg\",\n  \"anioEstreno\": 2019,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -355,132 +1135,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 400', function () { pm.response.to.have.status(400); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "2. Modulo Director",
-      "item": [
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/directores",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "directores"
-              ]
-            },
-            "description": "Crea un director. Guarda el id en {{directorId}}.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombres\": \"Christopher Nolan\",\n  \"estado\": \"Activo\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('directorId', json.datos._id); }"
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Senala el campo genero\", function () { pm.expect(json.detalles[0].campo).to.eql(\"genero\"); });",
+                  "pm.test(\"Dice que esta Inactivo\", function () { pm.expect(json.detalles[0].mensaje).to.include(\"Inactivo\"); });"
                 ]
               }
             }
           ]
         },
         {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/directores",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "directores"
-              ]
-            },
-            "description": "Lista los directores."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/directores/{{directorId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "directores",
-                "{{directorId}}"
-              ]
-            },
-            "description": "Consulta un director por id."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
+          "name": "Rechaza editar con genero inactivo",
           "request": {
             "method": "PUT",
             "header": [
@@ -490,20 +1155,20 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/directores/{{directorId}}",
+              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "directores",
-                "{{directorId}}"
+                "medias",
+                "{{mediaId}}"
               ]
             },
-            "description": "Actualiza un director.",
+            "description": "La regla tambien aplica al editar, no solo al crear.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombres\": \"Christopher Edward Nolan\"\n}",
+              "raw": "{\n  \"genero\": \"{{generoId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -518,13 +1183,54 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Senala el campo genero\", function () { pm.expect(json.detalles[0].campo).to.eql(\"genero\"); });"
                 ]
               }
             }
           ]
         },
         {
+          "name": "La produccion no se rompio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias",
+                "{{mediaId}}"
+              ]
+            },
+            "description": "Desactivar un genero no daña las producciones que ya lo usaban: siguen apuntando a el."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Sigue apuntando al genero\", function () { pm.expect(json.datos.genero.estado).to.eql(\"Inactivo\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar el genero",
           "request": {
             "method": "PATCH",
             "header": [
@@ -534,18 +1240,18 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/directores/{{directorId}}/estado",
+              "raw": "{{baseUrl}}/api/generos/{{generoId}}/estado",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "directores",
-                "{{directorId}}",
+                "generos",
+                "{{generoId}}",
                 "estado"
               ]
             },
-            "description": "Alterna el estado del director."
+            "description": "Vuelve a Activo para poder continuar."
           },
           "response": [],
           "event": [
@@ -554,254 +1260,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Vuelve a Activo\", function () { pm.expect(json.datos.estado).to.eql(\"Activo\"); });"
                 ]
               }
             }
           ]
         },
         {
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/directores/{{directorId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "directores",
-                "{{directorId}}"
-              ]
-            },
-            "description": "Elimina el director."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/directores",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "directores"
-              ]
-            },
-            "description": "VALIDACION: sin nombres, debe responder 400.",
-            "body": {
-              "mode": "raw",
-              "raw": "{}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 400', function () { pm.response.to.have.status(400); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "3. Modulo Productora",
-      "item": [
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/productoras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productoras"
-              ]
-            },
-            "description": "Crea una productora. Guarda el id en {{productoraId}}.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Warner Bros\",\n  \"estado\": \"Activo\",\n  \"slogan\": \"The reel thing\",\n  \"descripcion\": \"Estudio fundado en 1923.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('productoraId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/productoras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productoras"
-              ]
-            },
-            "description": "Lista las productoras."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/productoras/{{productoraId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productoras",
-                "{{productoraId}}"
-              ]
-            },
-            "description": "Consulta una productora por id."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/productoras/{{productoraId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productoras",
-                "{{productoraId}}"
-              ]
-            },
-            "description": "Actualiza una productora.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"slogan\": \"Slogan actualizado\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
+          "name": "Desactivar la productora",
           "request": {
             "method": "PATCH",
             "header": [
@@ -822,7 +1290,7 @@
                 "estado"
               ]
             },
-            "description": "Alterna el estado de la productora."
+            "description": "La regla no es solo del genero: se comprueba tambien con productora."
           },
           "response": [],
           "event": [
@@ -831,13 +1299,372 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Queda Inactiva\", function () { pm.expect(json.datos.estado).to.eql(\"Inactivo\"); });"
                 ]
               }
             }
           ]
         },
         {
+          "name": "Rechaza crear con productora inactiva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias"
+              ]
+            },
+            "description": "Mismo comportamiento que con el genero.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial\": \"MED-0102\",\n  \"titulo\": \"Mother\",\n  \"sinopsis\": \"Una familia sin recursos se infiltra poco a poco en la casa de una familia adinerada.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/mother\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/parasitos.jpg\",\n  \"anioEstreno\": 2019,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", function () { pm.response.to.have.status(400); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Senala el campo productora\", function () { pm.expect(json.detalles[0].campo).to.eql(\"productora\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar la productora",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/productoras/{{productoraId}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "productoras",
+                "{{productoraId}}",
+                "estado"
+              ]
+            },
+            "description": "Deja el catalogo como estaba."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Vuelve a Activa\", function () { pm.expect(json.datos.estado).to.eql(\"Activo\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Integridad referencial y limpieza",
+      "description": "Va de ultima porque borra. El mismo DELETE cambia de respuesta segun si la produccion todavia existe: ese contraste es la mejor evidencia de la regla. Al terminar, la base queda vacia y la coleccion se puede volver a correr entera.",
+      "item": [
+        {
+          "name": "409 - borrar genero en uso",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos/{{generoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos",
+                "{{generoId}}"
+              ]
+            },
+            "description": "La produccion todavia lo referencia. Sin esta proteccion quedaria apuntando a la nada."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", function () { pm.response.to.have.status(409); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Dice que esta asociado a producciones\", function () { pm.expect(json.mensaje).to.include(\"produccion\"); });",
+                  "pm.test(\"Sugiere desactivarlo en vez de borrarlo\", function () { pm.expect(json.detalles[0].mensaje).to.include(\"PATCH\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El genero sigue existiendo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos/{{generoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos",
+                "{{generoId}}"
+              ]
+            },
+            "description": "El 409 no borro nada a medias."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Sigue ahi\", function () { pm.expect(json.datos.nombre).to.eql(\"Suspenso\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "409 - borrar tipo en uso",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tipos/{{tipoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tipos",
+                "{{tipoId}}"
+              ]
+            },
+            "description": "Misma proteccion en Tipo, pero el mensaje NO sugiere PATCH /estado porque este modulo no maneja estado."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", function () { pm.response.to.have.status(409); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"No sugiere PATCH estado\", function () { pm.expect(json.detalles[0].mensaje).to.not.include(\"PATCH\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar la produccion",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias",
+                "{{mediaId}}"
+              ]
+            },
+            "description": "Libera los cuatro catalogos."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"exito es true\", function () { pm.expect(json.exito).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La produccion ya no existe",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "medias",
+                "{{mediaId}}"
+              ]
+            },
+            "description": "Confirma que el borrado fue efectivo."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 404\", function () { pm.response.to.have.status(404); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "200 - borrar genero ya libre",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/generos/{{generoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "generos",
+                "{{generoId}}"
+              ]
+            },
+            "description": "Exactamente la misma peticion del primer paso de esta carpeta. Ahora nadie lo usa, asi que si borra."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"exito es true\", function () { pm.expect(json.exito).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar director",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/directores/{{directorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "directores",
+                "{{directorId}}"
+              ]
+            },
+            "description": "Limpieza."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar productora",
           "request": {
             "method": "DELETE",
             "header": [
@@ -857,7 +1684,7 @@
                 "{{productoraId}}"
               ]
             },
-            "description": "Elimina la productora."
+            "description": "Limpieza."
           },
           "response": [],
           "event": [
@@ -866,219 +1693,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}"
                 ]
               }
             }
           ]
         },
         {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/productoras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productoras"
-              ]
-            },
-            "description": "VALIDACION: nombre vacio, debe responder 400.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 400', function () { pm.response.to.have.status(400); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "4. Modulo Tipo",
-      "item": [
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/tipos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tipos"
-              ]
-            },
-            "description": "Crea un tipo. Guarda el id en {{tipoId}}.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Pelicula\",\n  \"descripcion\": \"Produccion de una sola pieza audiovisual.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('tipoId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/tipos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tipos"
-              ]
-            },
-            "description": "Lista los tipos."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/tipos/{{tipoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tipos",
-                "{{tipoId}}"
-              ]
-            },
-            "description": "Consulta un tipo por id."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/tipos/{{tipoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tipos",
-                "{{tipoId}}"
-              ]
-            },
-            "description": "Actualiza un tipo.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"descripcion\": \"Descripcion actualizada.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
+          "name": "Borrar tipo",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1098,7 +1721,7 @@
                 "{{tipoId}}"
               ]
             },
-            "description": "Elimina el tipo."
+            "description": "Limpieza."
           },
           "response": [],
           "event": [
@@ -1107,357 +1730,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}"
                 ]
               }
             }
           ]
         },
         {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/tipos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tipos"
-              ]
-            },
-            "description": "VALIDACION: sin nombre, debe responder 400.",
-            "body": {
-              "mode": "raw",
-              "raw": "{}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 400', function () { pm.response.to.have.status(400); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "5. Modulo Media (peliculas y series)",
-      "item": [
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias"
-              ]
-            },
-            "description": "Crea una produccion. Requiere que existan {{generoId}}, {{directorId}}, {{productoraId}} y {{tipoId}} y que esten Activos.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serial\": \"MOV-0001\",\n  \"titulo\": \"Interstellar\",\n  \"sinopsis\": \"Un grupo de exploradores viaja mas alla de nuestra galaxia buscando un nuevo hogar.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/interstellar\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/interstellar.jpg\",\n  \"anioEstreno\": 2014,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('mediaId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
+          "name": "La base quedo limpia",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias?pagina=1&limite=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias"
-              ],
-              "query": [
-                {
-                  "key": "pagina",
-                  "value": "1"
-                },
-                {
-                  "key": "limite",
-                  "value": "10"
-                }
-              ]
-            },
-            "description": "Lista las producciones. Admite ?buscar=, ?genero=, ?director=, ?productora=, ?tipo=, ?anioEstreno="
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias",
-                "{{mediaId}}"
-              ]
-            },
-            "description": "Consulta una produccion por id (trae genero, director, productora y tipo poblados)."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias",
-                "{{mediaId}}"
-              ]
-            },
-            "description": "Actualiza una produccion.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Interstellar (Version extendida)\",\n  \"anioEstreno\": 2014\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias",
-                "{{mediaId}}"
-              ]
-            },
-            "description": "Elimina la produccion."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias"
-              ]
-            },
-            "description": "VALIDACION: URL con formato invalido, debe responder 400.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serial\": \"MOV-0002\",\n  \"titulo\": \"Interstellar\",\n  \"sinopsis\": \"Un grupo de exploradores viaja mas alla de nuestra galaxia buscando un nuevo hogar.\",\n  \"url\": \"esto-no-es-una-url\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/interstellar.jpg\",\n  \"anioEstreno\": 2014,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 400', function () { pm.response.to.have.status(400); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias"
-              ]
-            },
-            "description": "REGLA DE NEGOCIO: genero inexistente o inactivo, debe responder 400.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serial\": \"MOV-0003\",\n  \"titulo\": \"Interstellar\",\n  \"sinopsis\": \"Un grupo de exploradores viaja mas alla de nuestra galaxia buscando un nuevo hogar.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/otra\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/interstellar.jpg\",\n  \"anioEstreno\": 2014,\n  \"genero\": \"507f1f77bcf86cd799439011\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 400', function () { pm.response.to.have.status(400); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "6. Flujo completo sugerido",
-      "item": [
-        {
-          "request": {
-            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -1474,16 +1757,7 @@
                 "generos"
               ]
             },
-            "description": "Paso 1: crear genero.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Aventura\",\n  \"descripcion\": \"Viajes y exploracion.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Deja la base como al inicio para poder volver a correr la coleccion completa."
           },
           "response": [],
           "event": [
@@ -1492,224 +1766,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('generoId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/directores",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "directores"
-              ]
-            },
-            "description": "Paso 2: crear director.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombres\": \"Denis Villeneuve\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('directorId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/productoras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productoras"
-              ]
-            },
-            "description": "Paso 3: crear productora.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Legendary Pictures\",\n  \"slogan\": \"Stories worth telling\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('productoraId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/tipos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tipos"
-              ]
-            },
-            "description": "Paso 4: crear tipo.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Serie\",\n  \"descripcion\": \"Produccion por temporadas.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('tipoId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias"
-              ]
-            },
-            "description": "Paso 5: crear la produccion con las referencias anteriores.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serial\": \"MOV-0010\",\n  \"titulo\": \"Dune\",\n  \"sinopsis\": \"Paul Atreides debe viajar al planeta mas peligroso del universo.\",\n  \"url\": \"https://peliculas.iudigital.edu.co/dune\",\n  \"imagenPortada\": \"https://peliculas.iudigital.edu.co/portadas/dune.jpg\",\n  \"anioEstreno\": 2021,\n  \"genero\": \"{{generoId}}\",\n  \"director\": \"{{directorId}}\",\n  \"productora\": \"{{productoraId}}\",\n  \"tipo\": \"{{tipoId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 201', function () { pm.response.to.have.status(201); });",
-                  "var json = pm.response.json();",
-                  "if (json.datos && json.datos._id) { pm.collectionVariables.set('mediaId', json.datos._id); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/medias/{{mediaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "medias",
-                "{{mediaId}}"
-              ]
-            },
-            "description": "Paso 6: verificar que la produccion trae las relaciones pobladas."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Codigo 200', function () { pm.response.to.have.status(200); });"
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Sin generos\", function () { pm.expect(json.meta.total).to.eql(0); });"
                 ]
               }
             }

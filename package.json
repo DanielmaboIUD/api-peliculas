@@ -5,9 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "seed": "node src/seed/seed.js",
-    "verificar": "node verificar.js"
+    "dev": "nodemon src/server.js"
   },
   "keywords": [
     "api",
