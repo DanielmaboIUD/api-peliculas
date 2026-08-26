@@ -1,9 +1,5 @@
 const ApiError = require('../utils/ApiError');
 
-/**
- * Middleware central de errores: traduce los errores de Mongoose y de la app
- * a respuestas JSON coherentes.
- */
 // eslint-disable-next-line no-unused-vars
 function manejarErrores(err, req, res, next) {
   let statusCode = err.statusCode || 500;

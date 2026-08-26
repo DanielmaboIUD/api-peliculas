@@ -1,6 +1,3 @@
-/**
- * Formato unico de respuesta para toda la API.
- */
 function ok(res, { statusCode = 200, mensaje = 'Operacion exitosa', datos = null, meta = undefined }) {
   const cuerpo = { exito: true, mensaje };
   if (meta) cuerpo.meta = meta;

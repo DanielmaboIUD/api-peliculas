@@ -1,6 +1,3 @@
-/**
- * Error de aplicacion con codigo HTTP asociado.
- */
 class ApiError extends Error {
   constructor(statusCode, mensaje, detalles = undefined) {
     super(mensaje);

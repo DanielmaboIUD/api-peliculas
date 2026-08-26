@@ -1,10 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { ESTADOS } = require('../utils/constantes');
 
-/**
- * Modulo de Director
- * Registra y edita el director principal de la produccion (solo uno).
- */
 const directorSchema = new Schema(
   {
     nombres: {

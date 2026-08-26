@@ -1,10 +1,6 @@
 const { Schema, model } = require('mongoose');
 
-/**
- * Modulo de Tipo
- * Registra los tipos de multimedia: serie, pelicula y los que se necesiten a futuro.
- * Segun el caso de estudio este modulo no maneja estado.
- */
+// A diferencia de los otros catalogos, Tipo no lleva estado: el caso no lo pide.
 const tipoSchema = new Schema(
   {
     nombre: {

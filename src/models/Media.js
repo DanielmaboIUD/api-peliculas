@@ -1,9 +1,5 @@
 const { Schema, model } = require('mongoose');
 
-/**
- * Modulo de Media (peliculas y series)
- * Gestiona las producciones y sus relaciones con Genero, Director, Productora y Tipo.
- */
 const mediaSchema = new Schema(
   {
     serial: {

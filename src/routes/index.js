@@ -8,7 +8,6 @@ router.use('/productoras', require('./productora.routes'));
 router.use('/tipos', require('./tipo.routes'));
 router.use('/medias', require('./media.routes'));
 
-// Ruta de bienvenida con el mapa de endpoints
 router.get('/', (req, res) => {
   res.json({
     exito: true,

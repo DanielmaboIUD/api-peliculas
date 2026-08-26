@@ -1,11 +1,6 @@
 const { Schema, model } = require('mongoose');
 const { ESTADOS } = require('../utils/constantes');
 
-/**
- * Modulo de Genero
- * Registra y edita los generos de las producciones (accion, drama, terror, ...).
- * Una produccion se clasifica en un unico genero.
- */
 const generoSchema = new Schema(
   {
     nombre: {
