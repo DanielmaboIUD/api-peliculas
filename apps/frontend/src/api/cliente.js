@@ -39,6 +39,15 @@ async function pedir(ruta, { metodo = 'GET', cuerpo, params } = {}) {
     throw new ErrorApi('No se pudo conectar con la API. Verifique que este encendida.');
   }
 
+  // El mensaje de un 500 suele ser tecnico (una traza de Mongo, por ejemplo) y
+  // no ayuda a quien usa el panel.
+  if (respuesta.status >= 500) {
+    throw new ErrorApi(
+      'El servidor tuvo un problema al procesar la peticion. Intente de nuevo en unos segundos.',
+      respuesta.status
+    );
+  }
+
   let contenido;
   try {
     contenido = await respuesta.json();

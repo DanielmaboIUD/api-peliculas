@@ -6,6 +6,7 @@ import Modal from '../componentes/Modal';
 import SinDatos from '../componentes/SinDatos';
 import Tabla from '../componentes/Tabla';
 import { useRecurso } from '../api/useRecurso';
+import { obligatorio, validar } from '../validacion';
 
 const vacios = (campos) => Object.fromEntries(campos.map(({ nombre }) => [nombre, '']));
 
@@ -15,8 +16,20 @@ const desdeFila = (campos, fila, conEstado) => ({
 });
 
 // Pantalla comun a Genero, Director, Productora y Tipo. Cada modulo la
-// configura con sus campos y sus funciones de la capa de API.
-function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, recursos }) {
+// configura con sus campos y sus funciones de la capa de API. En cada campo,
+// requerido es el mensaje que se muestra si llega vacio.
+function Catalogo({
+  titulo,
+  descripcion,
+  singular,
+  femenino = false,
+  campos,
+  conEstado = false,
+  recursos,
+}) {
+  const nuevo = femenino ? 'Nueva' : 'Nuevo';
+  const ninguno = femenino ? 'ninguna' : 'ningun';
+
   const { datos, meta, cargando, error, recargar } = useRecurso(
     () => recursos.listar({ limite: 100 }),
     []
@@ -29,6 +42,13 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
   const [porEliminar, setPorEliminar] = useState(null);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [ocupado, setOcupado] = useState(false);
+  const [errorAccion, setErrorAccion] = useState(null);
+
+  const reglas = Object.fromEntries(
+    campos
+      .filter(({ requerido }) => requerido)
+      .map(({ nombre, requerido }) => [nombre, [obligatorio(requerido)]])
+  );
 
   const abrirCreacion = () => {
     setErrorFormulario(null);
@@ -48,16 +68,21 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
 
   const guardar = async (evento) => {
     evento.preventDefault();
+    const { editando, valores } = formulario;
+    const errorLocal = validar(valores, reglas);
+    setErrorFormulario(errorLocal);
+    if (errorLocal) return;
+
     setGuardando(true);
-    setErrorFormulario(null);
     try {
-      const { editando, valores } = formulario;
       if (editando) await recursos.actualizar(editando._id, valores);
       else await recursos.crear(valores);
       setFormulario(null);
       recargar();
     } catch (fallo) {
       setErrorFormulario(fallo);
+      // 404: el registro se borro desde otro sitio y la tabla esta desactualizada.
+      if (fallo.codigo === 404) recargar();
     } finally {
       setGuardando(false);
     }
@@ -65,12 +90,13 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
 
   const alternarEstado = async (fila) => {
     setOcupado(true);
+    setErrorAccion(null);
     try {
       await recursos.cambiarEstado(fila._id);
       recargar();
     } catch (fallo) {
-      setErrorEliminar(fallo);
-      setPorEliminar(fila);
+      setErrorAccion(fallo);
+      if (fallo.codigo === 404) recargar();
     } finally {
       setOcupado(false);
     }
@@ -85,6 +111,7 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
       recargar();
     } catch (fallo) {
       setErrorEliminar(fallo);
+      if (fallo.codigo === 404) recargar();
     } finally {
       setOcupado(false);
     }
@@ -100,6 +127,7 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
       recargar();
     } catch (fallo) {
       setErrorEliminar(fallo);
+      if (fallo.codigo === 404) recargar();
     } finally {
       setOcupado(false);
     }
@@ -143,16 +171,29 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
 
       <div className="barra-acciones">
         <button type="button" className="primario" onClick={abrirCreacion}>
-          Nuevo {singular}
+          {nuevo} {singular}
         </button>
-        {meta && <span className="conteo">{meta.total} registrados</span>}
+        {meta && (
+          <span className="conteo">
+            {meta.total} {meta.total === 1 ? 'registro' : 'registros'}
+          </span>
+        )}
       </div>
 
       {cargando && <Cargando />}
       {error && <MensajeError error={error} onReintentar={recargar} />}
+      {errorAccion && (
+        <MensajeError
+          error={errorAccion}
+          onReintentar={() => {
+            setErrorAccion(null);
+            recargar();
+          }}
+        />
+      )}
 
       {datos?.length === 0 && (
-        <SinDatos mensaje={`Todavia no hay ningun ${singular}.`}>
+        <SinDatos mensaje={`Todavia no hay ${ninguno} ${singular}.`}>
           <button type="button" onClick={abrirCreacion}>
             Crear el primero
           </button>
@@ -165,17 +206,27 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
           filas={datos}
           acciones={(fila) => (
             <>
-              <button type="button" onClick={() => abrirEdicion(fila)}>
+              <button
+                type="button"
+                aria-label={`Editar ${fila[campos[0].nombre]}`}
+                onClick={() => abrirEdicion(fila)}
+              >
                 Editar
               </button>
               {conEstado && (
-                <button type="button" disabled={ocupado} onClick={() => alternarEstado(fila)}>
+                <button
+                  type="button"
+                  disabled={ocupado}
+                  aria-label={`${fila.estado === 'Activo' ? 'Desactivar' : 'Activar'} ${fila[campos[0].nombre]}`}
+                  onClick={() => alternarEstado(fila)}
+                >
                   {fila.estado === 'Activo' ? 'Desactivar' : 'Activar'}
                 </button>
               )}
               <button
                 type="button"
                 className="peligro"
+                aria-label={`Eliminar ${fila[campos[0].nombre]}`}
                 onClick={() => {
                   setErrorEliminar(null);
                   setPorEliminar(fila);
@@ -190,12 +241,14 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
 
       {formulario && (
         <Modal
-          titulo={`${formulario.editando ? 'Editar' : 'Nuevo'} ${singular}`}
+          titulo={`${formulario.editando ? 'Editar' : nuevo} ${singular}`}
           onCerrar={() => setFormulario(null)}
         >
           <form onSubmit={guardar}>
             {errorFormulario && !hayErroresDeCampo && (
-              <p className="aviso-formulario">{errorFormulario.message}</p>
+              <p className="aviso-formulario" role="alert">
+                {errorFormulario.message}
+              </p>
             )}
 
             {campos.map(({ nombre, etiqueta, requerido, multilinea, maxLength }) => (
@@ -249,7 +302,7 @@ function Catalogo({ titulo, descripcion, singular, campos, conEstado = false, re
           )}
 
           {errorEliminar && (
-            <div className="aviso-formulario">
+            <div className="aviso-formulario" role="alert">
               <p>{errorEliminar.message}</p>
               {/* El detalle de la API explica como proceder. Si se ofrece el
                   boton, sobra: repetiria la instruccion en jerga de REST. */}

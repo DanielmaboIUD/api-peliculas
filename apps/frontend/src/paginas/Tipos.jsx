@@ -2,7 +2,7 @@ import Catalogo from './Catalogo';
 import { actualizarTipo, crearTipo, eliminarTipo, listarTipos } from '../api/recursos';
 
 const CAMPOS = [
-  { nombre: 'nombre', etiqueta: 'Nombre', requerido: true, maxLength: 100 },
+  { nombre: 'nombre', etiqueta: 'Nombre', requerido: 'El nombre del tipo es obligatorio', maxLength: 100 },
   { nombre: 'descripcion', etiqueta: 'Descripcion', multilinea: true, maxLength: 500 },
 ];
 

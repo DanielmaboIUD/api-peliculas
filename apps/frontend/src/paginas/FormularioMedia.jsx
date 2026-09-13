@@ -11,8 +11,7 @@ import {
   listarTipos,
 } from '../api/recursos';
 import { useRecurso } from '../api/useRecurso';
-
-const ANIO_MAXIMO = new Date().getFullYear() + 5;
+import { ANIO_MAXIMO, ANIO_MINIMO, anio, obligatorio, url, validar } from '../validacion';
 
 const RELACIONES = [
   { nombre: 'genero', etiqueta: 'Genero', texto: (opcion) => opcion.nombre },
@@ -41,6 +40,22 @@ async function cargarOpciones() {
   };
 }
 
+const REGLAS = {
+  serial: [obligatorio('El serial es obligatorio')],
+  anioEstreno: [obligatorio('El año de estreno es obligatorio'), anio],
+  titulo: [obligatorio('El titulo es obligatorio')],
+  sinopsis: [obligatorio('La sinopsis es obligatoria')],
+  url: [obligatorio('La URL es obligatoria'), url('La URL no tiene un formato valido')],
+  imagenPortada: [
+    obligatorio('La imagen de portada es obligatoria'),
+    url('La imagen de portada debe ser una URL valida'),
+  ],
+  genero: [obligatorio('El genero es obligatorio')],
+  director: [obligatorio('El director es obligatorio')],
+  productora: [obligatorio('La productora es obligatoria')],
+  tipo: [obligatorio('El tipo es obligatorio')],
+};
+
 function valoresIniciales(media) {
   return {
     serial: media?.serial ?? '',
@@ -56,7 +71,7 @@ function valoresIniciales(media) {
   };
 }
 
-function FormularioMedia({ media, onGuardado, onCancelar }) {
+function FormularioMedia({ media, onGuardado, onCancelar, onNoEncontrada }) {
   const opciones = useRecurso(cargarOpciones, []);
   const [valores, setValores] = useState(() => valoresIniciales(media));
   const [error, setError] = useState(null);
@@ -77,8 +92,11 @@ function FormularioMedia({ media, onGuardado, onCancelar }) {
 
   const guardar = async (evento) => {
     evento.preventDefault();
+    const errorLocal = validar(valores, REGLAS);
+    setError(errorLocal);
+    if (errorLocal) return;
+
     setGuardando(true);
-    setError(null);
     const cuerpo = {
       ...valores,
       anioEstreno: valores.anioEstreno === '' ? '' : Number(valores.anioEstreno),
@@ -90,6 +108,8 @@ function FormularioMedia({ media, onGuardado, onCancelar }) {
     } catch (fallo) {
       setError(fallo);
       setGuardando(false);
+      // 404: la produccion se borro mientras se editaba.
+      if (fallo.codigo === 404) onNoEncontrada?.();
     }
   };
 
@@ -117,7 +137,7 @@ function FormularioMedia({ media, onGuardado, onCancelar }) {
     <form onSubmit={guardar} noValidate>
       {/* Con diez campos, alguno marcado puede quedar fuera de la vista. */}
       {error && (
-        <p className="aviso-formulario">
+        <p className="aviso-formulario" role="alert">
           {error.message}
           {campoConError && '. Revise los campos marcados.'}
         </p>
@@ -135,10 +155,13 @@ function FormularioMedia({ media, onGuardado, onCancelar }) {
           <div className="campo" key={relacion.nombre}>
             <label htmlFor={relacion.nombre}>
               {relacion.etiqueta}
-              <span className="marca-requerido"> *</span>
+              <span className="marca-requerido" aria-hidden="true">
+                {' '}*
+              </span>
             </label>
             <select
               id={relacion.nombre}
+              aria-required="true"
               value={valores[relacion.nombre]}
               onChange={(evento) => escribir(relacion.nombre, evento.target.value)}
               aria-invalid={errorDe(relacion.nombre) ? 'true' : undefined}
@@ -162,7 +185,7 @@ function FormularioMedia({ media, onGuardado, onCancelar }) {
       </div>
 
       <p className="nota-formulario">
-        Solo se ofrecen generos, directores y productoras activos. El año va de 1888 a {ANIO_MAXIMO}.
+        Solo se ofrecen generos, directores y productoras activos. El año va de {ANIO_MINIMO} a {ANIO_MAXIMO}.
       </p>
 
       <div className="pie-modal">

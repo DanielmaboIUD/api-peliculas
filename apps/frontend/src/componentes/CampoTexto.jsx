@@ -1,6 +1,6 @@
-// Sin el atributo required: la validacion que manda es la del servidor, y el
-// navegador impediria comprobar que sus mensajes llegan. La etapa 6 anade la
-// validacion de cliente encima.
+// Sin el atributo required: el navegador bloquearia el envio con su propio
+// globo. La validacion de cliente esta en validacion.js y pinta sus errores en
+// el mismo sitio que los del servidor.
 function CampoTexto({
   id,
   etiqueta,
@@ -19,7 +19,11 @@ function CampoTexto({
     <div className={className ? `campo ${className}` : 'campo'}>
       <label htmlFor={id}>
         {etiqueta}
-        {requerido && <span className="marca-requerido"> *</span>}
+        {requerido && (
+          <span className="marca-requerido" aria-hidden="true">
+            {' '}*
+          </span>
+        )}
       </label>
       <Control
         id={id}
@@ -29,6 +33,7 @@ function CampoTexto({
         onChange={(evento) => onChange(evento.target.value)}
         maxLength={maxLength}
         rows={multilinea ? 3 : undefined}
+        aria-required={requerido ? 'true' : undefined}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
       />

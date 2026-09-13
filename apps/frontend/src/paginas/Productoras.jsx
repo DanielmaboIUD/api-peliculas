@@ -8,7 +8,7 @@ import {
 } from '../api/recursos';
 
 const CAMPOS = [
-  { nombre: 'nombre', etiqueta: 'Nombre', requerido: true, maxLength: 150 },
+  { nombre: 'nombre', etiqueta: 'Nombre', requerido: 'El nombre de la productora es obligatorio', maxLength: 150 },
   { nombre: 'slogan', etiqueta: 'Slogan', maxLength: 200 },
   { nombre: 'descripcion', etiqueta: 'Descripcion', multilinea: true, maxLength: 500 },
 ];
@@ -19,6 +19,7 @@ function Productoras() {
       titulo="Productoras"
       descripcion="Empresas que producen las peliculas y series."
       singular="productora"
+      femenino
       campos={CAMPOS}
       conEstado
       recursos={{

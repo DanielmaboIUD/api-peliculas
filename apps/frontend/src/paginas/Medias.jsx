@@ -92,6 +92,7 @@ function Medias() {
       recargar();
     } catch (fallo) {
       setErrorEliminar(fallo);
+      if (fallo.codigo === 404) recargar();
     } finally {
       setEliminando(false);
     }
@@ -108,7 +109,11 @@ function Medias() {
         <button type="button" className="primario" onClick={() => setFormulario({ media: null })}>
           Nueva produccion
         </button>
-        {meta && <span className="conteo">{meta.total} encontradas</span>}
+        {meta && (
+          <span className="conteo">
+            {meta.total} {meta.total === 1 ? 'produccion' : 'producciones'}
+          </span>
+        )}
       </div>
 
       <form className="filtros tarjeta" role="search" onSubmit={(evento) => evento.preventDefault()}>
@@ -198,12 +203,17 @@ function Medias() {
                   {media.tipo && ` · ${media.tipo.nombre}`}
                 </p>
                 <div className="acciones-fila">
-                  <button type="button" onClick={() => setFormulario({ media })}>
+                  <button
+                    type="button"
+                    aria-label={`Editar ${media.titulo}`}
+                    onClick={() => setFormulario({ media })}
+                  >
                     Editar
                   </button>
                   <button
                     type="button"
                     className="peligro"
+                    aria-label={`Eliminar ${media.titulo}`}
                     onClick={() => {
                       setErrorEliminar(null);
                       setPorEliminar(media);
@@ -246,6 +256,7 @@ function Medias() {
             media={formulario.media}
             onGuardado={alGuardar}
             onCancelar={() => setFormulario(null)}
+            onNoEncontrada={recargar}
           />
         </Modal>
       )}
@@ -253,7 +264,9 @@ function Medias() {
       {porEliminar && (
         <Modal titulo="Eliminar produccion" onCerrar={() => setPorEliminar(null)}>
           {errorEliminar ? (
-            <p className="aviso-formulario">{errorEliminar.message}</p>
+            <p className="aviso-formulario" role="alert">
+              {errorEliminar.message}
+            </p>
           ) : (
             <p>
               Se va a eliminar <strong>{porEliminar.titulo}</strong>. Esta accion no se puede deshacer.

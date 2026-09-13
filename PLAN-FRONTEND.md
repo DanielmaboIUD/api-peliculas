@@ -2,7 +2,7 @@
 
 **Proyecto:** Gestión de películas y series — Ingeniería Web II, IU Digital de Antioquia
 **Fecha:** 13 de septiembre de 2026
-**Estado:** aprobado, sin empezar
+**Estado:** completado
 
 ---
 
