@@ -116,3 +116,40 @@ button.primario.peligro:hover:not(:disabled) {
 .aviso-formulario p + p {
   margin-top: var(--espacio-2);
 }
+
+.modal-amplio {
+  max-width: 680px;
+}
+
+.rejilla-formulario {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--espacio-4);
+}
+
+.rejilla-formulario .ancho-completo {
+  grid-column: 1 / -1;
+}
+
+.nota-formulario {
+  color: var(--color-texto-suave);
+  font-size: var(--texto-sm);
+}
+
+@media (max-width: 560px) {
+  .rejilla-formulario {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Paginacion */
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-4);
+  margin-top: var(--espacio-5);
+  color: var(--color-texto-suave);
+  font-size: var(--texto-sm);
+}
