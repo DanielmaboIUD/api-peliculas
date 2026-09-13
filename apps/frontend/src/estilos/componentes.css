@@ -1,0 +1,118 @@
+/* Barra de acciones sobre la tabla */
+
+.barra-acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+  margin-bottom: var(--espacio-4);
+}
+
+.conteo {
+  color: var(--color-texto-suave);
+  font-size: var(--texto-sm);
+}
+
+.acciones-fila {
+  display: flex;
+  gap: var(--espacio-2);
+}
+
+.acciones-fila button {
+  padding: var(--espacio-1) var(--espacio-3);
+  font-size: var(--texto-sm);
+}
+
+td.celda-larga {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+button.primario.peligro {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: #fff;
+}
+
+button.primario.peligro:hover:not(:disabled) {
+  background: #8f1c13;
+  border-color: #8f1c13;
+}
+
+/* Modal */
+
+.fondo-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--espacio-6) var(--espacio-4);
+  background: rgba(16, 24, 40, 0.45);
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  padding: var(--espacio-5);
+}
+
+.modal:focus {
+  outline: none;
+}
+
+.modal-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+  margin-bottom: var(--espacio-4);
+}
+
+.modal-cabecera .cerrar {
+  padding: 0 var(--espacio-2);
+  border: none;
+  background: none;
+  color: var(--color-texto-suave);
+  font-size: var(--texto-xl);
+  line-height: 1;
+}
+
+.pie-modal {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-5);
+}
+
+/* Campos de formulario */
+
+.campo {
+  margin-bottom: var(--espacio-4);
+}
+
+.marca-requerido {
+  color: var(--color-error);
+}
+
+.error-campo {
+  margin-top: var(--espacio-1);
+  color: var(--color-error);
+  font-size: var(--texto-sm);
+}
+
+.aviso-formulario {
+  padding: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+  border: 1px solid var(--color-aviso);
+  border-radius: var(--radio-sm);
+  background: var(--color-aviso-fondo);
+  color: var(--color-aviso);
+  font-size: var(--texto-sm);
+}
+
+.aviso-formulario p + p {
+  margin-top: var(--espacio-2);
+}
