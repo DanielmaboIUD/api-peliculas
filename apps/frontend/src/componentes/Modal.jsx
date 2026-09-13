@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-function Modal({ titulo, onCerrar, children }) {
+function Modal({ titulo, onCerrar, amplio, children }) {
   const caja = useRef(null);
 
   // Solo al abrir: si se repitiera en cada render robaria el foco a los inputs.
@@ -19,7 +19,7 @@ function Modal({ titulo, onCerrar, children }) {
   return (
     <div className="fondo-modal">
       <div
-        className="modal tarjeta"
+        className={amplio ? 'modal modal-amplio tarjeta' : 'modal tarjeta'}
         role="dialog"
         aria-modal="true"
         aria-labelledby="titulo-modal"
