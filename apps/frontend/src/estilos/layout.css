@@ -1,0 +1,112 @@
+.cabecera {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--alto-cabecera);
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: 0 var(--espacio-5);
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+  z-index: 2;
+}
+
+.cabecera a {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.cabecera .subtitulo {
+  color: var(--color-texto-suave);
+  font-size: var(--texto-sm);
+  border-left: 1px solid var(--color-borde);
+  padding-left: var(--espacio-3);
+}
+
+.barra {
+  position: fixed;
+  top: var(--alto-cabecera);
+  bottom: 0;
+  left: 0;
+  width: var(--ancho-barra);
+  padding: var(--espacio-4) var(--espacio-3);
+  background: var(--color-barra);
+  overflow-y: auto;
+}
+
+.barra .titulo-grupo {
+  padding: 0 var(--espacio-3) var(--espacio-2);
+  font-size: var(--texto-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7c8798;
+}
+
+.barra a {
+  display: block;
+  padding: var(--espacio-2) var(--espacio-3);
+  margin-bottom: var(--espacio-1);
+  border-radius: var(--radio-sm);
+  color: var(--color-barra-texto);
+  text-decoration: none;
+}
+
+.barra a:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.barra a.activo {
+  background: var(--color-primario);
+  color: #fff;
+  font-weight: 600;
+}
+
+.contenido {
+  padding: calc(var(--alto-cabecera) + var(--espacio-5)) var(--espacio-5) var(--espacio-6);
+  margin-left: var(--ancho-barra);
+}
+
+.contenido > header {
+  margin-bottom: var(--espacio-5);
+}
+
+.contenido > header p {
+  color: var(--color-texto-suave);
+}
+
+/* Pantalla angosta: la barra deja de ser lateral y pasa a scroll horizontal */
+@media (max-width: 720px) {
+  .barra {
+    position: static;
+    width: auto;
+    padding: var(--espacio-2);
+    overflow-x: auto;
+  }
+
+  .barra ul {
+    display: flex;
+    gap: var(--espacio-2);
+  }
+
+  .barra .titulo-grupo {
+    display: none;
+  }
+
+  .barra a {
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+
+  .contenido {
+    margin-left: 0;
+    padding: var(--espacio-4);
+  }
+
+  .cabecera {
+    position: static;
+  }
+}
