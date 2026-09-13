@@ -27,12 +27,14 @@
   overflow: hidden;
 }
 
+/* Mismo fondo mientras carga y cuando falla: una URL a un dominio inexistente
+   tarda varios segundos en darse por perdida y la tarjeta no queda en blanco. */
 .portada {
   display: block;
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  background: var(--color-fondo);
+  background: linear-gradient(160deg, #2b3445, var(--color-barra));
 }
 
 .portada-vacia {
@@ -41,7 +43,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--espacio-1);
-  background: linear-gradient(160deg, #2b3445, var(--color-barra));
   color: #9aa4b5;
 }
 
@@ -85,5 +86,11 @@
 
   .filtros .campo:first-child {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .filtros {
+    grid-template-columns: 1fr;
   }
 }

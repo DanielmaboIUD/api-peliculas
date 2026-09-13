@@ -8,7 +8,7 @@ import {
 } from '../api/recursos';
 
 // El campo se llama nombres, en plural, porque asi lo nombra la API.
-const CAMPOS = [{ nombre: 'nombres', etiqueta: 'Nombres', requerido: true, maxLength: 150 }];
+const CAMPOS = [{ nombre: 'nombres', etiqueta: 'Nombres', requerido: 'Los nombres son obligatorios', maxLength: 150 }];
 
 function Directores() {
   return (
