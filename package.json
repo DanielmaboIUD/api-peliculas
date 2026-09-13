@@ -1,31 +1,16 @@
 {
-  "name": "api-peliculas",
+  "name": "peliculas-monorepo",
   "version": "1.0.0",
-  "description": "API REST para la gestion de peliculas y series - Caso de estudio IU Digital de Antioquia (Ingenieria Web II)",
-  "main": "src/server.js",
-  "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
-  },
-  "keywords": [
-    "api",
-    "rest",
-    "nodejs",
-    "express",
-    "mongodb",
-    "mongoose"
-  ],
+  "private": true,
+  "description": "Monorepo del proyecto de gestion de peliculas y series - IU Digital de Antioquia (Ingenieria Web II)",
   "author": "Dani - IU Digital de Antioquia",
   "license": "MIT",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-validator": "^7.1.0",
-    "mongoose": "^8.5.1",
-    "morgan": "^1.10.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.4"
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=api-peliculas",
+    "dev:web": "npm run dev --workspace=frontend-peliculas",
+    "start:api": "npm run start --workspace=api-peliculas"
   }
 }

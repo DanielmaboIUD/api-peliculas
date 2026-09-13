@@ -1,108 +1,60 @@
-# API REST de Películas y Series
+# Gestión de películas y series
 
-Actividad **S20 - EA1: API REST - NodeJs** — Ingeniería Web II, IU Digital de Antioquia.
+Proyecto de **Ingeniería Web II** — IU Digital de Antioquia.
 
-API REST con Node.js + Express + MongoDB (Mongoose) para los cinco módulos del caso de estudio: **Género, Director, Productora, Tipo y Media**.
+El repositorio es un monorepo con dos aplicaciones: la API REST y el panel web que la consume.
 
-## Instalación
+## Estructura
+
+```
+peliculas-monorepo/
+├── package.json          <- workspaces y scripts de arranque
+├── PLAN-FRONTEND.md      <- plan por etapas del frontend
+└── apps/
+    ├── backend/          <- API REST (Node + Express + MongoDB)
+    └── frontend/         <- panel de administración (React + Vite)
+```
+
+Las dependencias de las dos aplicaciones se instalan juntas en un único `node_modules` de la raíz, gracias a los *workspaces* de npm.
+
+## Puesta en marcha
+
+Una sola instalación desde la raíz, para todo el monorepo:
 
 ```bash
 npm install
-copy .env.example .env
 ```
 
-Ajustar `MONGO_URI` en el `.env`:
+Después, cada aplicación necesita su archivo de variables de entorno:
 
+```bash
+copy apps\backend\.env.example apps\backend\.env
 ```
-PORT=3000
-MONGO_URI=mongodb://127.0.0.1:27017/peliculas_db
-```
+
+En `apps/backend/.env` se ajusta `MONGO_URI` con la cadena de conexión a MongoDB.
 
 ## Ejecución
 
+Desde la raíz, en dos terminales distintas:
+
 ```bash
-npm run dev     # desarrollo (nodemon)
-npm start       # normal
+npm run dev:api     # API en http://localhost:3000
+npm run dev:web     # panel en http://localhost:5173
 ```
 
-La API queda en `http://localhost:3000`.
+Para comprobar que la API responde:
 
-## Modelo de datos
-
-Cinco colecciones. `medias` se relaciona con las otras cuatro por `ObjectId`.
-
-| Colección | Campos |
-|---|---|
-| `generos` | nombre (único), estado, descripcion, fechaCreacion, fechaActualizacion |
-| `directores` | nombres, estado, fechaCreacion, fechaActualizacion |
-| `productoras` | nombre (único), estado, slogan, descripcion, fechaCreacion, fechaActualizacion |
-| `tipos` | nombre (único), descripcion, fechaCreacion, fechaActualizacion |
-| `medias` | serial (único), titulo, sinopsis, url (única), imagenPortada, anioEstreno, genero, director, productora, tipo, fechaCreacion, fechaActualizacion |
-
-`estado` acepta `Activo` o `Inactivo`. El módulo Tipo no maneja estado porque el caso de estudio no lo pide.
-
-**Regla del caso:** al crear o editar una producción solo se aceptan género, director y productora en estado `Activo`.
-
-**Integridad referencial:** no se puede eliminar un género, director, productora o tipo que alguna producción esté usando; la API responde `409`. Para retirarlo del catálogo sin borrar el historial se usa `PATCH /:id/estado`.
-
-## Endpoints
-
-Base: `http://localhost:3000/api`
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/generos` | Listar |
-| GET | `/generos/:id` | Consultar uno |
-| POST | `/generos` | Crear |
-| PUT | `/generos/:id` | Actualizar |
-| PATCH | `/generos/:id/estado` | Activar / desactivar |
-| DELETE | `/generos/:id` | Eliminar |
-
-Los módulos `/directores` y `/productoras` tienen exactamente las mismas operaciones.
-
-`/tipos` tiene las mismas **sin** `PATCH /:id/estado`.
-
-`/medias` tiene GET, GET `/:id`, POST, PUT y DELETE.
-
-## Ejemplo
-
-```http
-POST /api/medias
-Content-Type: application/json
-
-{
-  "serial": "MOV-0001",
-  "titulo": "Interstellar",
-  "sinopsis": "Un grupo de exploradores viaja más allá de nuestra galaxia.",
-  "url": "https://peliculas.iudigital.edu.co/interstellar",
-  "imagenPortada": "https://peliculas.iudigital.edu.co/portadas/interstellar.jpg",
-  "anioEstreno": 2014,
-  "genero": "<id del género>",
-  "director": "<id del director>",
-  "productora": "<id de la productora>",
-  "tipo": "<id del tipo>"
-}
+```
+GET http://localhost:3000/health
 ```
 
-Todas las respuestas usan el mismo formato:
+`npm run start:api` arranca la API sin nodemon.
 
-```json
-{ "exito": true, "mensaje": "...", "datos": { } }
-```
+## Las dos aplicaciones
 
-## Códigos de respuesta
+| Aplicación | Carpeta | Paquete | Documentación |
+|---|---|---|---|
+| API REST | `apps/backend` | `api-peliculas` | [README](apps/backend/README.md) |
+| Panel web | `apps/frontend` | `frontend-peliculas` | pendiente |
 
-| Código | Significado |
-|---|---|
-| 200 | Consulta, actualización o eliminación exitosa |
-| 201 | Recurso creado |
-| 400 | Datos inválidos, id mal formado o referencia inactiva |
-| 404 | No encontrado |
-| 409 | Valor duplicado en un campo único, o intento de eliminar un registro en uso |
-| 500 | Error interno |
-
-## Pruebas
-
-Las pruebas se hicieron manualmente con **Thunder Client**, la extensión de cliente HTTP de Visual Studio Code.
-
-Se recorrieron los cinco módulos en este orden: alta de los cuatro catálogos, creación de una producción con sus referencias, consultas con paginación, filtros y búsqueda, edición y cambio de estado, y por último los rechazos (`400`, `404` y `409`) junto con la regla de referencias activas.
+El detalle del modelo de datos, los endpoints y los códigos de respuesta está en el README del backend.
