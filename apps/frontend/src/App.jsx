@@ -1,46 +1,28 @@
-import { listarGeneros } from './api/recursos';
-import { useRecurso } from './api/useRecurso';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Layout from './componentes/Layout';
+import Directores from './paginas/Directores';
+import Generos from './paginas/Generos';
+import Medias from './paginas/Medias';
+import NoEncontrada from './paginas/NoEncontrada';
+import Productoras from './paginas/Productoras';
+import Resumen from './paginas/Resumen';
+import Tipos from './paginas/Tipos';
 
-// Prueba de la capa de acceso. La etapa 3 la sustituye por el layout y las rutas.
 function App() {
-  const { datos, meta, cargando, error, recargar } = useRecurso(() => listarGeneros(), []);
-
   return (
-    <main>
-      <h1>Peliculas y series</h1>
-      <p>Panel de administracion. Ingenieria Web II, IU Digital de Antioquia.</p>
-
-      <h2>Generos</h2>
-      <button type="button" onClick={recargar} disabled={cargando}>
-        Recargar
-      </button>
-
-      {cargando && <p>Cargando...</p>}
-
-      {error && (
-        <p>
-          {error.codigo ? `Error ${error.codigo}: ` : ''}
-          {error.message}
-        </p>
-      )}
-
-      {datos?.length === 0 && <p>No hay generos registrados.</p>}
-
-      {datos?.length > 0 && (
-        <>
-          <ul>
-            {datos.map((genero) => (
-              <li key={genero._id}>
-                {genero.nombre} ({genero.estado})
-              </li>
-            ))}
-          </ul>
-          <p>
-            {meta.total} en total, pagina {meta.pagina} de {meta.paginas}
-          </p>
-        </>
-      )}
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Resumen />} />
+          <Route path="/generos" element={<Generos />} />
+          <Route path="/directores" element={<Directores />} />
+          <Route path="/productoras" element={<Productoras />} />
+          <Route path="/tipos" element={<Tipos />} />
+          <Route path="/medias" element={<Medias />} />
+          <Route path="*" element={<NoEncontrada />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
