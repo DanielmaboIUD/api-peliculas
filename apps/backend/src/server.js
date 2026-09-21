@@ -1,14 +1,12 @@
 require('dotenv').config();
 const app = require('./app');
-const { conectarDB, sincronizarIndices } = require('./config/db');
+const { asegurarConexion } = require('./config/db');
 
 const PORT = process.env.PORT || 3000;
 
 async function iniciar() {
   try {
-    await conectarDB();
-    const modelos = await sincronizarIndices();
-    console.log(`[DB] Indices listos: ${modelos.join(', ')}`);
+    await asegurarConexion();
     app.listen(PORT, () => {
       console.log(`[API] Servidor escuchando en http://localhost:${PORT}`);
       console.log(`[API] Documentacion de endpoints en http://localhost:${PORT}/api`);

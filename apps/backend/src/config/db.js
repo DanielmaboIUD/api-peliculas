@@ -18,4 +18,22 @@ async function sincronizarIndices() {
   return modelos.map((modelo) => modelo.modelName);
 }
 
-module.exports = { conectarDB, sincronizarIndices };
+// En Vercel no corre server.js: la primera peticion abre la conexion y las
+// siguientes de la misma instancia reutilizan esta promesa. Si falla, se
+// descarta para que la proxima peticion lo intente de nuevo.
+let conexion = null;
+
+function asegurarConexion() {
+  if (!conexion) {
+    conexion = conectarDB()
+      .then(() => sincronizarIndices())
+      .then((modelos) => console.log(`[DB] Indices listos: ${modelos.join(', ')}`))
+      .catch((error) => {
+        conexion = null;
+        throw error;
+      });
+  }
+  return conexion;
+}
+
+module.exports = { conectarDB, sincronizarIndices, asegurarConexion };
