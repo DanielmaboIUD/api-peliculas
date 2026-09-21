@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 
 const rutas = require('./routes');
+const requiereConexion = require('./middlewares/requiereConexion');
 const noEncontrado = require('./middlewares/noEncontrado');
 const manejarErrores = require('./middlewares/manejarErrores');
 
@@ -19,7 +20,7 @@ app.get('/health', (req, res) => {
   res.json({ exito: true, mensaje: 'API en funcionamiento', fecha: new Date().toISOString() });
 });
 
-app.use('/api', rutas);
+app.use('/api', requiereConexion, rutas);
 
 app.use(noEncontrado);
 app.use(manejarErrores);

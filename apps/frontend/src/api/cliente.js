@@ -1,5 +1,9 @@
 const BASE = import.meta.env.VITE_API_URL;
 
+// Vite fija la variable al compilar. Sin ella las URLs quedarian como
+// /undefined/generos, asi que main.jsx muestra un aviso en lugar del panel.
+export const apiConfigurada = Boolean(BASE);
+
 // Conserva el codigo HTTP y el arreglo detalles de la API. Sin detalles los
 // formularios no pueden marcar el campo que fallo.
 export class ErrorApi extends Error {
@@ -26,6 +30,10 @@ function construirUrl(ruta, params) {
 }
 
 async function pedir(ruta, { metodo = 'GET', cuerpo, params } = {}) {
+  if (!apiConfigurada) {
+    throw new ErrorApi('Falta configurar VITE_API_URL: el panel no sabe a que API llamar.');
+  }
+
   const opciones = { method: metodo };
   if (cuerpo !== undefined) {
     opciones.headers = { 'Content-Type': 'application/json' };

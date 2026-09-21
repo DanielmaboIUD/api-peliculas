@@ -61,6 +61,28 @@ GET http://localhost:3000/health
 
 El detalle del modelo de datos, los endpoints y los códigos de respuesta está en el README del backend. La estructura del panel y cómo traduce cada error de la API están en el README del frontend.
 
+## Despliegue en Vercel
+
+Cada aplicación es un proyecto de Vercel distinto, conectado a este mismo repositorio. Lo que cambia entre ellos es el *Root Directory*.
+
+| Proyecto | Root Directory | Variables de entorno | URL |
+|---|---|---|---|
+| `api-peliculas-backend` | `apps/backend` | `MONGO_URI` | https://api-peliculas-backend.vercel.app |
+| `peliculas-frontend` | `apps/frontend` | `VITE_API_URL=https://api-peliculas-backend.vercel.app/api` | https://peliculas-frontend.vercel.app |
+
+Las variables se cargan en *Settings > Environment Variables* de cada proyecto y solo aplican al siguiente despliegue: después de cambiarlas hay que hacer *Redeploy*.
+
+**Backend.** Vercel detecta Express y arranca desde `src/app.js`, no desde `server.js`. Por eso la conexión a MongoDB se abre en la primera petición a `/api` y se reutiliza en las siguientes. `PORT` no hace falta. En MongoDB Atlas, *Network Access* debe permitir `0.0.0.0/0`, porque las funciones de Vercel no salen por una IP fija.
+
+**Frontend.** Vercel lo detecta como proyecto de Vite: compila con `npm run build` y publica `dist`. `VITE_API_URL` se lee al compilar; si falta, el panel muestra un aviso en lugar de los módulos. `vercel.json` redirige todas las rutas a `index.html` para que recargar en `/medias` no dé 404.
+
+Para comprobar el backend desplegado:
+
+```
+GET https://api-peliculas-backend.vercel.app/health
+GET https://api-peliculas-backend.vercel.app/api/generos
+```
+
 ## El panel
 
 Resumen con el número de registros de cada módulo:
