@@ -1,11 +1,15 @@
 const mongoose = require('mongoose');
 
+// Si Mongo no responde en este tiempo, la conexion falla en lugar de dejar la
+// peticion esperando. El valor por defecto del driver es 30 s.
+const ESPERA_MAXIMA_MS = 5000;
+
 async function conectarDB(uri = process.env.MONGO_URI) {
   if (!uri) {
-    throw new Error('No se definio la variable MONGO_URI en el archivo .env');
+    throw new Error('No se definio la variable de entorno MONGO_URI');
   }
   mongoose.set('strictQuery', true);
-  await mongoose.connect(uri);
+  await mongoose.connect(uri, { serverSelectionTimeoutMS: ESPERA_MAXIMA_MS });
   console.log(`[DB] Conectado a MongoDB: ${mongoose.connection.name}`);
   return mongoose.connection;
 }
