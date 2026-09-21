@@ -199,6 +199,12 @@ tbody tr:hover {
   margin-top: var(--espacio-3);
 }
 
+.sin-configurar {
+  max-width: 640px;
+  margin: var(--espacio-6) auto;
+  padding: 0 var(--espacio-4);
+}
+
 /* Rejilla de tarjetas */
 
 .rejilla {
